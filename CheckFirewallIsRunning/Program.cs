@@ -11,54 +11,63 @@ namespace CheckFirewallIsRunning
     class Program
     {
         static bool IsTest = false;
-        static TimeSpan StatusWait = IsTest ? TimeSpan.FromSeconds(10) : TimeSpan.FromMinutes(1);
+        static TimeSpan StatusTimeout = IsTest ? TimeSpan.FromSeconds(10) : TimeSpan.FromMinutes(1);
+        static TimeSpan StartTimeout = TimeSpan.FromMinutes(2);
         static ServiceController FirewallService = new ServiceController("MpsSvc");
         static CancellationTokenSource Running = new CancellationTokenSource();
         static async Task Main(string[] args)
         {
+            Console.Title = "CheckFirewall";
+            Console.WindowHeight = 5;
+            Console.WindowWidth = 50;
             Console.CancelKeyPress += (sender, e) => Running.Cancel();
             try
             {
                 while (!Running.IsCancellationRequested)
                 {
-                    await StartFireWallService();
-                    await WaitForLeaveFireWallStatus(ServiceControllerStatus.Running);
+                    await StartFirewallService();
+                    Console.Title = "CheckFirewall Running";
+                    Console.WriteLine($"{DateTime.Now.ToString("yyyy.MM.dd HH:mmm:ss")} {Console.Title}");
+                    await WaitForLeaveFirewallStatus(ServiceControllerStatus.Running);
+                    Console.Title = "CheckFirewall Starting";
+                    Console.WriteLine(Console.Title);
                 }
             }
+            catch (TaskCanceledException) { }
             catch (Exception ex)
             {
                 Console.WriteLine(ex);
             }
         }
 
-        static async Task WaitForFirewallServiceStatus(ServiceControllerStatus status, TimeSpan? statusWait = default)
+        static async Task WaitForFirewallServiceStatus(ServiceControllerStatus status, TimeSpan? statusTimeout = default)
         {
             while (!Running.IsCancellationRequested)
             {
-                await Task.Delay(statusWait ?? StatusWait, Running.Token).ConfigureAwait(false);
+                await Task.Delay(statusTimeout ?? StatusTimeout, Running.Token).ConfigureAwait(false);
                 if (FirewallService.Status == status)
                     break;
             }
         }
 
-        static async Task WaitForLeaveFireWallStatus(ServiceControllerStatus status, TimeSpan? statusWait = default)
+        static async Task WaitForLeaveFirewallStatus(ServiceControllerStatus status, TimeSpan? statusTimeout = default)
         {
             while (!Running.IsCancellationRequested)
             {
-                await Task.Delay(statusWait ?? StatusWait, Running.Token).ConfigureAwait(false);
+                await Task.Delay(statusTimeout ?? StatusTimeout, Running.Token).ConfigureAwait(false);
                 if (FirewallService.Status != status)
                     break;
             }
         }
 
-        static async Task StartFireWallService()
+        static async Task StartFirewallService()
         {
             if (FirewallService.StartType != ServiceStartMode.Manual)
                 ServiceHelper.ChangeStartMode(FirewallService, ServiceStartMode.Manual);
             if (FirewallService.Status != ServiceControllerStatus.Running)
             {
                 FirewallService.Start();
-                await WaitForFirewallServiceStatus(ServiceControllerStatus.Running);
+                await WaitForFirewallServiceStatus(ServiceControllerStatus.Running, StartTimeout);
             }
         }
     }
