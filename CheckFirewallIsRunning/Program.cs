@@ -17,7 +17,7 @@ namespace CheckFirewallIsRunning
         static CancellationTokenSource Running = new CancellationTokenSource();
         static async Task Main(string[] args)
         {
-            Console.Title = "CheckFirewall";
+            Message("program start");
             Console.WindowHeight = 5;
             Console.WindowWidth = 50;
             Console.CancelKeyPress += (sender, e) => Running.Cancel();
@@ -26,11 +26,7 @@ namespace CheckFirewallIsRunning
                 while (!Running.IsCancellationRequested)
                 {
                     await StartFirewallService();
-                    Console.Title = "CheckFirewall Running";
-                    Console.WriteLine($"{DateTime.Now.ToString("yyyy.MM.dd HH:mmm:ss")} {Console.Title}");
                     await WaitForLeaveFirewallStatus(ServiceControllerStatus.Running);
-                    Console.Title = "CheckFirewall Starting";
-                    Console.WriteLine(Console.Title);
                 }
             }
             catch (TaskCanceledException) { }
@@ -38,6 +34,13 @@ namespace CheckFirewallIsRunning
             {
                 Console.WriteLine(ex);
             }
+            Message("program end");
+        }
+
+        static void Message(string message)
+        {
+            Console.Title = $"{nameof(CheckFirewallIsRunning)} {message}".Trim();
+            Console.WriteLine($"{DateTime.Now.ToString("yyyy.MM.dd HH:mmm:ss")} {message}");
         }
 
         static async Task WaitForFirewallServiceStatus(ServiceControllerStatus status, TimeSpan? statusTimeout = default)
@@ -60,6 +63,7 @@ namespace CheckFirewallIsRunning
                 if (FirewallService.Status != status)
                     break;
             }
+            Message($"leave status={status}");
         }
 
         static async Task StartFirewallService()
@@ -68,8 +72,13 @@ namespace CheckFirewallIsRunning
                 ServiceHelper.ChangeStartMode(FirewallService, ServiceStartMode.Manual);
             if (FirewallService.Status != ServiceControllerStatus.Running)
             {
+                Message("starting");
                 FirewallService.Start();
                 await WaitForFirewallServiceStatus(ServiceControllerStatus.Running, StartTimeout);
+                if (FirewallService.Status == ServiceControllerStatus.Running)
+                    Message("running");
+                else
+                    Message("not running");
             }
         }
 
