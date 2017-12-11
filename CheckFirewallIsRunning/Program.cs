@@ -58,7 +58,8 @@ namespace CheckFirewallIsRunning
             int run = 0;
             while (!Running.IsCancellationRequested)
             {
-                if (++run > maxRuns) return;
+                if (++run > maxRuns)
+                    return;
                 await Task.Delay(statusTimeout ?? StatusTimeout, Running.Token);
                 if (FirewallService.Status != status)
                     break;
@@ -75,10 +76,7 @@ namespace CheckFirewallIsRunning
                 Message("starting");
                 FirewallService.Start();
                 await WaitForFirewallServiceStatus(ServiceControllerStatus.Running, StartTimeout);
-                if (FirewallService.Status == ServiceControllerStatus.Running)
-                    Message("running");
-                else
-                    Message("not running");
+                Message(FirewallService.Status == ServiceControllerStatus.Running ? "running" : "not running");
             }
         }
 
