@@ -9,6 +9,9 @@ using System.Threading.Tasks;
 
 namespace CheckFirewallIsRunning
 {
+    /// <summary>
+    /// Copied from http://peterkellyonline.blogspot.de/2011/04/configuring-windows-service.html
+    /// </summary>
     public static class ServiceHelper
     {
         [DllImport("advapi32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
